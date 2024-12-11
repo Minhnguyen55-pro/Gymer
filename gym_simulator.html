@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gymmer Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 400,
+        backgroundColor: '#87ceeb',
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+
+    let player;
+    let cursors;
+    let gymTools;
+    let energy = 100;
+    let muscle = 1;
+    let energyText, muscleText;
+
+    function preload() {
+        // Load các asset
+        this.load.image('background', 'https://i.imgur.com/4ljzt6o.png'); // Nền
+        this.load.image('ground', 'https://i.imgur.com/jVPUeSU.png'); // Sàn đất
+        this.load.image('tool', 'https://i.imgur.com/9yLQsKA.png'); // Dụng cụ gym
+        this.load.spritesheet('player', 'https://i.imgur.com/5Y9fpDe.png', {
+            frameWidth: 32,
+            frameHeight: 48
+        }); // Nhân vật
+    }
+
+    function create() {
+        // Nền
+        this.add.image(400, 200, 'background');
+
+        // Sàn
+        const platforms = this.physics.add.staticGroup();
+        platforms.create(400, 390, 'ground').setScale(2).refreshBody();
+
+        // Dụng cụ gym
+        gymTools = this.physics.add.staticGroup();
+        gymTools.create(600, 320, 'tool').setScale(0.5).refreshBody();
+
+        // Nhân vật
+        player = this.physics.add.sprite(100, 300, 'player');
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+
+        // Hoạt ảnh cho nhân vật
+        this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'turn',
+            frames: [{ key: 'player', frame: 4 }],
+            frameRate: 20
+        });
+
+        this.anims.create({
+            key: 'right',
+            frames: this.anims.generateFrameNumbers('player', { start: 5, end: 8 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        // Va chạm
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, gymTools, workout, null, this);
+
+        // Điều khiển
+        cursors = this.input.keyboard.createCursorKeys();
+
+        // Hiển thị trạng thái
+        energyText = this.add.text(10, 10, `Energy: ${energy}`, { fontSize: '16px', fill: '#fff' });
+        muscleText = this.add.text(10, 30, `Muscle: ${muscle.toFixed(1)}`, { fontSize: '16px', fill: '#fff' });
+    }
+
+    function update() {
+        // Điều khiển nhân vật
+        if (cursors.left.isDown) {
+            player.setVelocityX(-160);
+            player.anims.play('left', true);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(160);
+            player.anims.play('right', true);
+        } else {
+            player.setVelocityX(0);
+            player.anims.play('turn');
+        }
+
+        // Nhảy
+        if (cursors.up.isDown && player.body.touching.down) {
+            player.setVelocityY(-330);
+        }
+
+        // Hồi năng lượng theo thời gian
+        if (energy < 100) {
+            energy += 0.05;
+            energyText.setText(`Energy: ${Math.floor(energy)}`);
+        }
+    }
+
+    function workout(player, tool) {
+        if (energy > 0) {
+            energy -= 1; // Tiêu tốn năng lượng
+            muscle += 0.01; // Tăng cơ bắp
+            player.setScale(1 + muscle * 0.1); // Nhân vật lớn dần
+            energyText.setText(`Energy: ${Math.floor(energy)}`);
+            muscleText.setText(`Muscle: ${muscle.toFixed(1)}`);
+        }
+    }
+</script>
+</body>
+</html>
